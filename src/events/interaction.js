@@ -3,10 +3,9 @@ const {
 	sendEmbedMessage,
 	serverTime,
 	CloseButtonComponent } = require("../utils/core");
-const { ContextSDK } = require("@context-labs/sdk");
+const { sendAIFeedback } = require("../utils/nebula")
 const redis = require("./database");
 const config = require("../config.json");
-const context = new ContextSDK({});
 
 module.exports = {
 	name: Events.InteractionCreate,
@@ -27,13 +26,16 @@ module.exports = {
 					if (err) {
 						console.error(err);
 					} else {
-						await context.setQueryFeedback({
-							queryId: result,
-							helpful: true,
-						});
+						const data = JSON.parse(result);
+						
+						await sendAIFeedback(
+							data.session_id,
+							data.request_id,
+							true,
+						);
 					}
 				});
-				await interaction.message.edit({ components: [] });
+				// await interaction.message.edit({ components: [] });
 				await redis.del(messageId);
 
 				// log the feedback
@@ -41,20 +43,24 @@ module.exports = {
 			}
 
 			if (interaction.customId === "not-helpful") {
+				
 				await interaction.reply({
 					embeds: [sendEmbedMessage(config.not_helpful_messsage)],
 					content: `🔔 <@${interaction.user.id}>`,
 					ephemeral: true,
 					components: [CloseButtonComponent()],
 				});
+				
 				await redis.get(messageId, async (err, result) => {
 					if (err) {
 						console.error(err);
 					} else {
-						await context.setQueryFeedback({
-							queryId: result,
-							helpful: false,
-						});
+                        const data = JSON.parse(result);
+						await sendAIFeedback(
+							data.session_id,
+							data.request_id,
+							true,
+						);
 					}
 				});
 				await interaction.message.edit({ components: [] });
