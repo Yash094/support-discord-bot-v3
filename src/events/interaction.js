@@ -35,7 +35,7 @@ module.exports = {
 						);
 					}
 				});
-				// await interaction.message.edit({ components: [] });
+				await interaction.message.edit({ components: [] });
 				await redis.del(messageId);
 
 				// log the feedback
